@@ -64,7 +64,7 @@ if st.sidebar.button("🤖 Simulate 50 Witness Influx"):
             "Crime Type Selected": random.choice(crime_pool),
             "Custom Crime Details": "Automatic simulation data vector stream.",
             "Age Range": random.choice(["Teenager", "Twenties/Thirties", "Middle-Aged"]),
-            "Sex": "Male" if random.random() > 0.3 else random.choice(sex_pool), # Force a strong Mode bias
+            "Sex": "Male" if random.random() > 0.3 else random.choice(sex_pool),
             "Race/Complexion": "Dark/Black",
             "Custom Demographics": "",
             "Build": "Athletic",
@@ -155,8 +155,13 @@ else:
     st.write("### 🧠 Predictive Consensus Analytics")
     if valid_entries > 0:
         col1, col2, col3 = st.columns(3)
-        col1.metric(label="Primary Suspect Profile", value=str(filtered_df["Sex"].mode()[0]))
-        col2.metric(label="Dominant Demeanor", value=str(filtered_df["State of Mind"].mode()[0]))
+        
+        # Guard mode checks to prevent metric display errors if fields are blank
+        mode_sex = filtered_df["Sex"].mode()
+        mode_state = filtered_df["State of Mind"].mode()
+        
+        col1.metric(label="Primary Suspect Profile", value=str(mode_sex.iloc if not mode_sex.empty else "N/A"))
+        col2.metric(label="Dominant Demeanor", value=str(mode_state.iloc if not mode_state.empty else "N/A"))
         col3.metric(label="Data Integrity Base", value=f"{valid_entries} / {len(df)}")
         
         # --- NLP NARRATIVE ANALYSIS ENGINE ---
@@ -167,18 +172,21 @@ else:
         
         for field in text_fields:
             for text in filtered_df[field].dropna():
-                words = re.findall(r'\b\w+\b', text.lower())
+                words = re.findall(r'\w+', text.lower())
                 all_words.extend([word for word in words if word not in stop_words])
         
         word_counts = Counter(all_words)
-common_clues = {word: count for word, count in word_counts.items() if count >= 3} # Show items matching 3+ times
-if common_clues:
-for clue, count in sorted(common_clues.items(), key=lambda item: item[1], reverse=True)[:3]:
-st.warning(f"🚨 High-Frequency Narrative Match: '{clue.upper()}' flagged across {count} separate rapid-response accounts.")
-else:
-st.info("Cross-referencing open narratives... No high-frequency phrase anomalies detected.")
-st.write("#### Full Text Logging Review")
-st.dataframe(df[["Witness ID", "Custom Crime Details", "Custom Clothing Details", "Custom Behavior Details", "Retrieval Speed (s)"]], use_container_width=True)
-else:
-st.error("No high-speed data arrays available for mathematical profiling.")
-st.rerun()
+        common_clues = {word: count for word, count in word_counts.items() if count >= 3}
+        
+        if common_clues:
+            # Sort clues and display top matches safely wrapped inside the container logic
+            sorted_clues = sorted(common_clues.items(), key=lambda item: item, reverse=True)[:3]
+            for clue, count in sorted_clues:
+                st.warning(f"🚨 **High-Frequency Narrative Match:** '{clue.upper()}' flagged across {count} separate rapid-response accounts.")
+        else:
+            st.info("Cross-referencing open narratives... No high-frequency phrase anomalies detected.")
+            
+        st.write("#### Full Text Logging Review")
+        st.dataframe(df[["Witness ID", "Custom Crime Details", "Custom Clothing Details", "Custom Behavior Details", "Retrieval Speed (s)"]], use_container_width=True)
+    else:
+        st.error("No high-speed data arrays available for mathematical profiling.")
